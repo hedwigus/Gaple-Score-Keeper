@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useCallback, FC } from 'react';
-import { Player } from './types';
-import { PlusIcon, TrashIcon, LocationIcon, CrownIcon, RefreshIcon, SpinnerIcon } from './components/icons';
+import React, { useState, useMemo, useCallback, FC, useEffect } from 'react';
+import { Player, GameHistoryEntry } from './types';
+import { PlusIcon, TrashIcon, LocationIcon, CrownIcon, RefreshIcon, SpinnerIcon, ChevronDownIcon } from './components/icons';
 
 const PREDEFINED_NAMES = [
   "Joko", "Budi", "Edy", "Edi", "Teguh", "Rahmat", "Bambang", "Agus", 
@@ -194,16 +194,105 @@ const Scorecard: FC<{
     );
 };
 
+const GameHistory: FC<{
+    history: GameHistoryEntry[];
+    onClearHistory: () => void;
+}> = ({ history, onClearHistory }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    if (history.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="bg-gray-800 rounded-lg shadow-md">
+            <button 
+                className="w-full flex justify-between items-center p-4 text-left"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-expanded={isOpen}
+            >
+                <h2 className="text-lg font-semibold text-gray-200">Game History ({history.length})</h2>
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onClearHistory(); }}
+                        className="text-sm text-red-400 hover:text-red-300 font-medium transition"
+                        aria-label="Clear all game history"
+                    >
+                        Clear History
+                    </button>
+                    <ChevronDownIcon className={`h-5 w-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </div>
+            </button>
+            {isOpen && (
+                <div className="p-4 border-t border-gray-700 space-y-4 max-h-96 overflow-y-auto">
+                    {history.slice().reverse().map(game => (
+                        <div key={game.id} className="bg-gray-700/50 p-3 rounded-md">
+                            <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
+                                <span>{game.date}</span>
+                                <span className="flex items-center gap-1"><LocationIcon className="h-4 w-4" /> {game.location}</span>
+                            </div>
+                            <ul className="space-y-1 text-sm">
+                                {game.players.sort((a, b) => a.score - b.score).map(player => (
+                                    <li key={player.name} className={`flex justify-between p-1 rounded ${game.winnerNames.includes(player.name) ? 'bg-yellow-900/50' : ''}`}>
+                                        <span>
+                                            {game.winnerNames.includes(player.name) && <CrownIcon className="h-4 w-4 mr-1" />}
+                                            {player.name}
+                                        </span>
+                                        <span className={`font-bold ${game.winnerNames.includes(player.name) ? 'text-yellow-300' : 'text-gray-200'}`}>
+                                            {player.score}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 
 export default function App() {
     const [players, setPlayers] = useState<Player[]>([]);
     const [scores, setScores] = useState<number[][]>([[]]);
     const [location, setLocation] = useState('');
     const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+    const [gameHistory, setGameHistory] = useState<GameHistoryEntry[]>([]);
     
     const date = useMemo(() => new Date().toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric'
     }), []);
+
+    useEffect(() => {
+        try {
+            const savedHistory = localStorage.getItem('domino-game-history');
+            if (savedHistory) {
+                setGameHistory(JSON.parse(savedHistory));
+            }
+        } catch (error) {
+            console.error("Failed to load game history:", error);
+        }
+    }, []);
+
+    const totals = useMemo(() => {
+        if (players.length === 0) return [];
+        return players.map((_, playerIndex) => 
+            scores.reduce((sum, round) => sum + (round[playerIndex] || 0), 0)
+        );
+    }, [scores, players]);
+
+    const winningPlayerIds = useMemo(() => {
+        if (totals.length === 0 || players.length === 0) return new Set<string>();
+        const minScore = Math.min(...totals);
+        const winners = new Set<string>();
+        totals.forEach((total, index) => {
+            if (total === minScore) {
+                winners.add(players[index].id);
+            }
+        });
+        return winners;
+    }, [totals, players]);
 
     const handleAddPlayer = useCallback((name: string) => {
         if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
@@ -261,31 +350,42 @@ export default function App() {
     }, []);
 
     const handleNewGame = useCallback(() => {
-        if (window.confirm('Are you sure you want to start a new game? All current data will be lost.')) {
+        if (window.confirm('Are you sure you want to start a new game? The current game result will be saved.')) {
+            if (players.length > 0) {
+                const winnerNames = players
+                    .filter(p => winningPlayerIds.has(p.id))
+                    .map(p => p.name);
+
+                const playerResults = players.map((player, index) => ({
+                    name: player.name,
+                    score: totals[index],
+                }));
+
+                const newHistoryEntry: GameHistoryEntry = {
+                    id: crypto.randomUUID(),
+                    date,
+                    location: location || 'N/A',
+                    players: playerResults,
+                    winnerNames,
+                };
+                
+                const updatedHistory = [...gameHistory, newHistoryEntry];
+                setGameHistory(updatedHistory);
+                localStorage.setItem('domino-game-history', JSON.stringify(updatedHistory));
+            }
+
             setPlayers([]);
             setScores([[]]);
             setLocation('');
         }
+    }, [players, scores, totals, winningPlayerIds, date, location, gameHistory]);
+
+    const handleClearHistory = useCallback(() => {
+        if (window.confirm('Are you sure you want to clear all game history? This action cannot be undone.')) {
+            setGameHistory([]);
+            localStorage.removeItem('domino-game-history');
+        }
     }, []);
-
-    const totals = useMemo(() => {
-        if (players.length === 0) return [];
-        return players.map((_, playerIndex) => 
-            scores.reduce((sum, round) => sum + (round[playerIndex] || 0), 0)
-        );
-    }, [scores, players]);
-
-    const winningPlayerIds = useMemo(() => {
-        if (totals.length === 0 || players.length === 0) return new Set<string>();
-        const minScore = Math.min(...totals);
-        const winners = new Set<string>();
-        totals.forEach((total, index) => {
-            if (total === minScore) {
-                winners.add(players[index].id);
-            }
-        });
-        return winners;
-    }, [totals, players]);
 
 
     return (
@@ -317,6 +417,7 @@ export default function App() {
                         winningPlayerIds={winningPlayerIds}
                         onScoreChange={handleScoreChange} 
                     />
+                    <GameHistory history={gameHistory} onClearHistory={handleClearHistory} />
                 </div>
             </main>
 
