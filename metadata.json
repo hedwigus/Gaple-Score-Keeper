@@ -1,0 +1,7 @@
+{
+  "name": "Domino Scorekeeper",
+  "description": "A simple and elegant scorekeeper for domino games. Track player scores, including negative points, and save game details like date and location.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
