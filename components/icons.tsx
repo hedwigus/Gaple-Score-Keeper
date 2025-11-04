@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const PlusIcon = ({ className = "h-6 w-6" }: { className?: string }) => (
@@ -20,10 +19,10 @@ export const LocationIcon = ({ className = "h-5 w-5" }: { className?: string }) 
   </svg>
 );
 
-export const TrophyIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+export const CrownIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={`${className} inline-block text-yellow-400`} viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M11.12 2.234a.75.75 0 10-1.24 0l-1.42 2.502a.75.75 0 01-.66.414H4.5a.75.75 0 000 1.5h3.3a.75.75 0 01.66.414l1.42 2.503a.75.75 0 001.24 0l1.42-2.503a.75.75 0 01.66-.414h3.3a.75.75 0 000-1.5h-3.3a.75.75 0 01-.66-.414l-1.42-2.502zM10 11.5a.75.75 0 00-1.5 0v2.75a.75.75 0 001.5 0V11.5z" clipRule="evenodd" />
-        <path d="M4.5 14.5a.75.75 0 01.75.75v.255a3.5 3.5 0 006.5 0V15.25a.75.75 0 011.5 0v.005a5 5 0 01-9.5 0V15.25a.75.75 0 01.75-.75z" />
+        <path d="M11.025 2.221a.75.75 0 00-1.05 0l-1.388 1.436a.75.75 0 01-.525.223H5.85a.75.75 0 000 1.5h2.212a.75.75 0 01.525.223l1.388 1.436a.75.75 0 001.05 0l1.388-1.436a.75.75 0 01.525-.223h2.212a.75.75 0 000-1.5h-2.212a.75.75 0 01-.525-.223L11.025 2.221z" />
+        <path fillRule="evenodd" d="M10 6a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 6zM4.125 9.75a.75.75 0 01.75-.75h10.25a.75.75 0 010 1.5H4.875a.75.75 0 01-.75-.75zM4 12.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75a.75.75 0 01-.75-.75zM4.75 14.5a.75.75 0 000 1.5h10.5a.75.75 0 000-1.5H4.75z" clipRule="evenodd" />
     </svg>
 );
 

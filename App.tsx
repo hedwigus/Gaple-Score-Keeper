@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useCallback, FC } from 'react';
 import { Player } from './types';
-import { PlusIcon, TrashIcon, LocationIcon, TrophyIcon, RefreshIcon, SpinnerIcon } from './components/icons';
+import { PlusIcon, TrashIcon, LocationIcon, CrownIcon, RefreshIcon, SpinnerIcon } from './components/icons';
 
 const PREDEFINED_NAMES = [
   "Joko", "Budi", "Edy", "Edi", "Teguh", "Rahmat", "Bambang", "Agus", 
@@ -48,6 +47,7 @@ const PlayerManager: FC<{
     onRemovePlayer: (id: string) => void;
 }> = ({ players, onAddPlayer, onRemovePlayer }) => {
     const [newPlayerName, setNewPlayerName] = useState('');
+    const isPlayerLimitReached = players.length >= 4;
 
     const handleAddClick = () => {
         if (newPlayerName.trim()) {
@@ -71,9 +71,10 @@ const PlayerManager: FC<{
                     value={newPlayerName}
                     onChange={(e) => setNewPlayerName(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Enter or select player name"
-                    className="flex-grow bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                    placeholder={isPlayerLimitReached ? "Max 4 players reached" : "Enter or select player name"}
+                    className="flex-grow bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition disabled:bg-gray-600 disabled:cursor-not-allowed"
                     list="predefined-names"
+                    disabled={isPlayerLimitReached}
                 />
                 <datalist id="predefined-names">
                     {PREDEFINED_NAMES.map(name => <option key={name} value={name} />)}
@@ -81,7 +82,7 @@ const PlayerManager: FC<{
                 <button
                     onClick={handleAddClick}
                     className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold p-2 rounded-md flex items-center justify-center transition disabled:bg-gray-500"
-                    disabled={!newPlayerName.trim()}
+                    disabled={!newPlayerName.trim() || isPlayerLimitReached}
                     aria-label="Add Player"
                 >
                     <PlusIcon />
@@ -122,7 +123,7 @@ const Scorecard: FC<{
                             <th className="p-3 font-semibold text-sm text-gray-300 sticky left-0 bg-gray-700/50 z-10">Round</th>
                             {players.map(player => (
                                 <th key={player.id} className={`p-3 font-semibold text-sm truncate max-w-[100px] ${winningPlayerIds.has(player.id) ? 'text-yellow-400' : 'text-gray-300'}`}>
-                                    {winningPlayerIds.has(player.id) && <TrophyIcon className="h-4 w-4 mr-1" />}
+                                    {winningPlayerIds.has(player.id) && <CrownIcon className="h-4 w-4 mr-1" />}
                                     {player.name}
                                 </th>
                             ))}
@@ -130,21 +131,38 @@ const Scorecard: FC<{
                     </thead>
                     <tbody>
                         {scores.map((roundScores, roundIndex) => {
-                            const minRoundScore = players.length > 0 ? Math.min(...roundScores) : Infinity;
-                            const maxRoundScore = players.length > 0 ? Math.max(...roundScores) : -Infinity;
+                            const isPreviousRound = roundIndex < scores.length - 1;
+                            const shouldHighlight = roundScores.length > 1;
+                            const minRoundScore = shouldHighlight ? Math.min(...roundScores) : Infinity;
+                            const maxRoundScore = shouldHighlight ? Math.max(...roundScores) : -Infinity;
 
                             return (
                                 <tr key={roundIndex} className="border-b border-gray-700 last:border-b-0">
                                     <td className="p-2 font-bold text-gray-400 sticky left-0 bg-gray-800 z-10">{roundIndex + 1}</td>
                                     {roundScores.map((score, playerIndex) => {
-                                        const isRoundWinner = score === minRoundScore;
-                                        const isRoundLoser = score === maxRoundScore && minRoundScore !== maxRoundScore;
+                                        const isRoundMin = shouldHighlight && score === minRoundScore;
+                                        const isRoundMax = shouldHighlight && score === maxRoundScore && minRoundScore !== maxRoundScore;
+                                        
+                                        let scoreClasses = 'w-full text-center rounded-md p-2 transition disabled:cursor-not-allowed';
 
-                                        const scoreBgClass = isRoundWinner
-                                            ? 'bg-cyan-900/50 text-cyan-300 font-medium'
-                                            : isRoundLoser
-                                            ? 'bg-red-900/50 text-red-300'
-                                            : 'bg-gray-900';
+                                        if (isPreviousRound) {
+                                            if (isRoundMax) {
+                                                scoreClasses += ' bg-red-600 text-white font-bold';
+                                            } else if (isRoundMin) {
+                                                scoreClasses += ' text-yellow-400 font-bold bg-gray-800';
+                                            } else {
+                                                scoreClasses += ' text-gray-400 bg-gray-800';
+                                            }
+                                        } else { // Current round
+                                            scoreClasses += ' focus:ring-2 focus:ring-cyan-500 border border-transparent focus:border-cyan-500';
+                                            if (isRoundMin) {
+                                                scoreClasses += ' bg-cyan-900/50 text-cyan-300 font-medium';
+                                            } else if (isRoundMax) {
+                                                scoreClasses += ' bg-red-900/50 text-red-300';
+                                            } else {
+                                                scoreClasses += ' bg-gray-900';
+                                            }
+                                        }
 
                                         return (
                                             <td key={players[playerIndex].id} className="p-1">
@@ -152,7 +170,8 @@ const Scorecard: FC<{
                                                     type="number"
                                                     value={score}
                                                     onChange={(e) => onScoreChange(roundIndex, playerIndex, parseInt(e.target.value) || 0)}
-                                                    className={`w-full text-center rounded-md p-2 focus:ring-2 focus:ring-cyan-500 border border-transparent focus:border-cyan-500 transition ${scoreBgClass}`}
+                                                    className={scoreClasses}
+                                                    disabled={isPreviousRound}
                                                 />
                                             </td>
                                         );
@@ -189,6 +208,10 @@ export default function App() {
     const handleAddPlayer = useCallback((name: string) => {
         if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
             alert('Player name already exists.');
+            return;
+        }
+        if (players.length >= 4) {
+            alert('Maximum of 4 players reached.');
             return;
         }
         const newPlayer: Player = { id: crypto.randomUUID(), name };
