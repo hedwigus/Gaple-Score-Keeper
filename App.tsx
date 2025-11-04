@@ -4,9 +4,9 @@ import { PlusIcon, TrashIcon, LocationIcon, CrownIcon, RefreshIcon, SpinnerIcon 
 
 const PREDEFINED_NAMES = [
   "Joko", "Budi", "Edy", "Edi", "Teguh", "Rahmat", "Bambang", "Agus", 
-  "Anto", "Usman", "Jefri", "Tri", "Fikar", "Yudi", "Merdha", "Marjuki", 
+  "Anto", "Usman", "Jefri", "Cahyo", "Fikar", "Yudi", "Merdha", "Marjuki", 
   "Imam", "Alex", "Priyo", "Aldo", "Joni", "Guntur", "Denny", "Dani", 
-  "Rian", "Rizky", "Mike", "Dodi"
+  "Rian", "Rizky", "Mike", "Dodi", "Kamil", "Yatno", "Tri", "Yono", "Yanto"
 ].sort();
 
 const GameInfo: FC<{
